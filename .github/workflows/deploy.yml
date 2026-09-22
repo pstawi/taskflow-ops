@@ -76,8 +76,9 @@ jobs:
       # (npm ci --omit=dev) : on n'embarque jamais de binaires compilés.
       - name: 📦 Archive de release
         run: |
-          tar czf "$ARTIFACT" dist api \
-            --exclude=api/node_modules --exclude=api/reports --exclude=api/coverage
+          tar czf "$ARTIFACT" \
+            --exclude=api/node_modules --exclude=api/reports --exclude=api/coverage \
+            dist api
           ls -lh "$ARTIFACT"
 
       - uses: actions/upload-artifact@v4
