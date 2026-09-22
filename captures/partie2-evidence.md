@@ -12,7 +12,7 @@ Repo: https://github.com/pstawi/taskflow-ops (public pour activer Required revie
 
 - Deploy complet approuvé (build → staging → prod) : https://github.com/pstawi/taskflow-ops/actions/runs/35735404815
 - 2e Deploy (v4) : https://github.com/pstawi/taskflow-ops/actions/runs/35736347800
-- Rollback prod → v3 : https://github.com/pstawi/taskflow-ops/actions/runs/35736885080
+- Rollback prod → v3 (vert) : https://github.com/pstawi/taskflow-ops/actions/runs/35737315957
 
 ## Santé
 
