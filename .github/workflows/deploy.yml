@@ -45,6 +45,7 @@ permissions:
 env:
   APP_VERSION: ${{ github.run_number }}
   ARTIFACT: taskflow-${{ github.run_number }}.tar.gz
+  ANSIBLE_CONFIG: ansible/ansible.cfg
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
