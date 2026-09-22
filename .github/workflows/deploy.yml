@@ -326,12 +326,18 @@ jobs:
           printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "$HOME/.ssh/taskflow_lab"
           chmod 600 "$HOME/.ssh/taskflow_lab"
 
+      - name: 🔐 Mot de passe Vault
+        run: |
+          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > "$RUNNER_TEMP/.vault_pass"
+          chmod 600 "$RUNNER_TEMP/.vault_pass"
+
       # Le rollback ne transporte rien : la release est déjà sur la VM,
       # le playbook rebascule le lien `current` et redémarre l'API.
       - name: ⚙️ ansible-playbook rollback.yml (prod)
         run: |
           ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/rollback.yml \
-            -l prod -e rollback_to=${{ inputs.rollback_to }}
+            -l prod -e rollback_to=${{ inputs.rollback_to }} \
+            --vault-password-file "$RUNNER_TEMP/.vault_pass"
 
       - name: 🩺 Vérification
         run: |
@@ -340,4 +346,6 @@ jobs:
 
       - name: 🧹 Nettoyage du secret
         if: always()
-        run: rm -f "$HOME/.ssh/taskflow_lab"
+        run: |
+          rm -f "$HOME/.ssh/taskflow_lab"
+          rm -f "$RUNNER_TEMP/.vault_pass"
