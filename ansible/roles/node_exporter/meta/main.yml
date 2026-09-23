@@ -1,8 +1,8 @@
 ---
 galaxy_info:
   role_name: node_exporter
-  author: ForEach Academy
-  description: Installe node_exporter (Prometheus) en service systemd
+  author: pstawi
+  description: Agent Prometheus node_exporter pour les VMs TaskFlow
   license: MIT
   min_ansible_version: "2.14"
   platforms:
