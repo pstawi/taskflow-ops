@@ -1,16 +1,19 @@
 # {{ ansible_managed }}
 [Unit]
-Description=Prometheus node_exporter
+Description=node_exporter (métriques hôte TaskFlow lab)
+Documentation=https://github.com/prometheus/node_exporter
 After=network.target
 
 [Service]
+Type=simple
 User={{ node_exporter_user }}
 Group={{ node_exporter_user }}
-ExecStart={{ node_exporter_bin }} --web.listen-address=:{{ node_exporter_port }} \
+ExecStart={{ node_exporter_bin }} \
+  --web.listen-address=:{{ node_exporter_port }} \
   --collector.systemd \
   --no-collector.hwmon
-Restart=on-failure
-RestartSec=3
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
