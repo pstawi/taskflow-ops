@@ -1,0 +1,71 @@
+# =============================================================================
+# monitoring.yml — déploie les agents de monitoring (node_exporter) sur les VMs
+# =============================================================================
+name: Monitoring agents
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ansible/roles/node_exporter/**'
+      - 'ansible/playbooks/monitoring.yml'
+      - '.github/workflows/monitoring.yml'
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  ANSIBLE_CONFIG: ansible/ansible.cfg
+
+jobs:
+  node-exporter:
+    name: 📡 Déployer node_exporter
+    runs-on: [self-hosted, lab]
+    timeout-minutes: 10
+    environment: staging
+    env:
+      ANSIBLE_HOST_KEY_CHECKING: 'False'
+      ANSIBLE_FORCE_COLOR: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 🔑 Matérialiser la clé pour l'inventaire Ansible
+        run: |
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "$HOME/.ssh/taskflow_lab"
+          chmod 600 "$HOME/.ssh/taskflow_lab"
+
+      - name: 🔐 Mot de passe Vault
+        run: |
+          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > "$RUNNER_TEMP/.vault_pass"
+          chmod 600 "$RUNNER_TEMP/.vault_pass"
+
+      - run: ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: ⚙️ ansible-playbook monitoring.yml
+        run: |
+          ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/monitoring.yml \
+            --vault-password-file "$RUNNER_TEMP/.vault_pass"
+
+      - name: 🧹 Nettoyage
+        if: always()
+        run: |
+          rm -f "$HOME/.ssh/taskflow_lab"
+          rm -f "$RUNNER_TEMP/.vault_pass"
+
+      - name: 📋 Résumé
+        run: |
+          {
+            echo "## 📡 node_exporter déployé"
+            echo ""
+            echo "Prometheus peut maintenant scraper \`<ip_vm>:9100/metrics\` (job \`node-vms\`)."
+          } >> "$GITHUB_STEP_SUMMARY"

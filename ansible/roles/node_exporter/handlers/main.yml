@@ -1,2 +1,6 @@
 ---
-# TODO J3 : handler "Restart node_exporter" (systemd, daemon_reload)
+- name: Restart node_exporter
+  ansible.builtin.systemd:
+    name: node_exporter
+    state: restarted
+    daemon_reload: true
