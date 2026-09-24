@@ -56,3 +56,28 @@ jobs:
       - name: Audit API
         working-directory: api
         run: npm ci && npm audit --audit-level=high
+
+  # J4 — configs monitoring traitées comme du code applicatif
+  lint-monitoring:
+    name: Lint monitoring configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Prometheus rules
+        uses: docker://prom/prometheus:v2.53.0
+        with:
+          entrypoint: promtool
+          args: check rules monitoring/prometheus/rules/taskflow.yml
+
+      - name: Validate Prometheus config (syntax-only)
+        uses: docker://prom/prometheus:v2.53.0
+        with:
+          entrypoint: promtool
+          args: check config --syntax-only monitoring/prometheus/prometheus.yml
+
+      - name: Validate Alertmanager template
+        uses: docker://prom/alertmanager:v0.27.0
+        with:
+          entrypoint: amtool
+          args: check-config monitoring/alertmanager/alertmanager.example.yml

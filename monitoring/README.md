@@ -1,55 +1,51 @@
-# Monitoring TaskFlow
+# Monitoring local TaskFlow
 
-## Démarrage
+Stack Compose sur le poste (pas sur les VMs).
+
+## Ports
+
+| Service | Port |
+|---|---|
+| Prometheus | 9090 |
+| Grafana | 3001 (admin/admin) |
+| Alertmanager | 9093 |
+| MailHog UI | 8025 |
+| cAdvisor | 8081 |
+| blackbox | 9115 |
+| node-exporter | 9100 |
 
 ```bash
 cd monitoring
+cp alertmanager/alertmanager.example.yml alertmanager/alertmanager.yml   # une fois
 docker compose up -d
 ```
 
-| Service | URL |
-|---|---|
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 (admin / admin) |
-| node-exporter local | http://localhost:9100/metrics |
-
-Recharger la config Prometheus sans redémarrer :
+Après modif de règles / scrape :
 
 ```bash
+docker compose exec prometheus promtool check rules /etc/prometheus/rules/taskflow.yml
 curl -X POST http://localhost:9090/-/reload
 ```
 
-## Targets attendues (6)
+## IPs lab
 
-- `prometheus` — self
-- `node-local` — poste étudiant
-- `taskflow-api` — staging (`192.168.1.25`) + prod (`192.168.1.26`)
-- `node-vms` — node_exporter sur les 2 VMs `:9100`
+Mettre à jour `prometheus/prometheus.yml` si Multipass change d’IP (`multipass list`).
 
-## Requêtes PromQL (RED / USE)
+## Alerting
 
-```promql
-# Rate requêtes/s par environnement
-sum by (env) (rate(http_requests_total[1m]))
+- Règles : `prometheus/rules/taskflow.yml` (Watchdog + 6 alertes métier/infra)
+- Routage : mail → MailHog ; `critical` aussi vers Discord (`CHANGE_ME`)
+- Silence exemple :
 
-# Taux d'erreur 5xx
-sum by (env) (rate(http_requests_total{status_code=~"5.."}[5m]))
-  / sum by (env) (rate(http_requests_total[5m]))
-
-# Latence p95
-histogram_quantile(0.95, sum by (le, env) (rate(http_request_duration_seconds_bucket[5m])))
-
-# CPU VMs (USE)
-100 - (avg by (env) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
-
-# Mémoire disponible
-node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
-
-# Disque
-node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}
+```bash
+docker compose exec alertmanager amtool silence add \
+  alertname=TaskFlowApiDown env=staging \
+  --alertmanager.url=http://localhost:9093 \
+  --duration=1h --comment="maintenance" --author=pstawi
 ```
 
-## Dashboards Grafana (provisionnés)
+## Scénario E2E
 
-- **TaskFlow RED** (`taskflow-red`) — req/s, erreurs, p95, variable `env`
-- **Node Exporter Basic** — CPU / mémoire / disque des VMs
+1. `multipass exec taskflow-web1 -- sudo systemctl stop taskflow-api`
+2. Attendre ~2 min → `TaskFlowApiDown` firing → mail dans MailHog
+3. `multipass exec taskflow-web1 -- sudo systemctl start taskflow-api`

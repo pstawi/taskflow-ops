@@ -137,6 +137,62 @@
       ],
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 30,
+      "type": "stat",
+      "title": "Disponibilité (/health blackbox)",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_success{job=\"blackbox\", env=~\"$env\"}",
+          "legendFormat": "{{env}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "CPU VMs (%)",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 - (avg by (env) (rate(node_cpu_seconds_total{job=\"node-vms\", mode=\"idle\", env=~\"$env\"}[5m])) * 100)",
+          "legendFormat": "{{env}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Disque libre prévu à 4 h",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "predict_linear(node_filesystem_avail_bytes{job=\"node-vms\", mountpoint=\"/\", env=~\"$env\"}[1h], 4*3600)",
+          "legendFormat": "{{env}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
     }
   ]
 }
